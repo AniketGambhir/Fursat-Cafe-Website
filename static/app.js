@@ -1,58 +1,104 @@
-const WHATSAPP_NUMBER = "918788881280"; // Confirm this number with the cafe owner before launch.
+// CLIENT SETUP: replace this placeholder with the cafe's WhatsApp number,
+// including country code and digits only, e.g. 919876543210.
+const WHATSAPP_NUMBER = "91XXXXXXXXXX";
+
 const menuItems = [
-  {name:"Classic Margherita",category:"pizza",description:"A simple, comforting pizza with tomato and cheese.",price:219},
-  {name:"Garden Fresh Pizza",category:"pizza",description:"A colourful veggie-inspired pizza for sharing.",price:269},
-  {name:"Fursat Special Burger",category:"burgers",description:"A hearty cafe-style burger with a satisfying bite.",price:189},
-  {name:"Crispy Veg Burger",category:"burgers",description:"A crunchy veggie patty stacked in a soft bun.",price:149},
-  {name:"Grilled Cheese Sandwich",category:"sandwiches",description:"Golden toasted bread with a warm cheesy centre.",price:159},
-  {name:"Classic Cold Coffee",category:"coffee",description:"A chilled coffee pick-me-up.",price:129},
-  {name:"Cappuccino",category:"coffee",description:"A smooth espresso-style coffee with milk foam.",price:119}
+  {name:"House Espresso",category:"coffee",description:"A balanced, rich shot with a smooth finish.",price:110,tag:"SIGNATURE"},
+  {name:"Flat White",category:"coffee",description:"Velvety microfoam poured over a double espresso.",price:160,tag:"BARISTA PICK"},
+  {name:"Iced Spanish Latte",category:"coffee",description:"Chilled espresso, milk and a touch of sweetness.",price:190,tag:"COLD FAVOURITE"},
+  {name:"Slow Brew Pour Over",category:"coffee",description:"A clean, aromatic cup brewed to order.",price:180,tag:"SLOW BAR"},
+  {name:"Masala Chai",category:"tea",description:"A comforting cup with warming spices.",price:90,tag:"CLASSIC"},
+  {name:"Iced Matcha",category:"tea",description:"Earthy matcha shaken smooth and served cold.",price:170,tag:"FRESH"},
+  {name:"Avocado Toast",category:"bites",description:"Sourdough toast with a bright, savoury topping.",price:230,tag:"ALL DAY"},
+  {name:"Grilled Cheese Melt",category:"bites",description:"Golden toasted bread with a gooey cheese centre.",price:190,tag:"COMFORT"},
+  {name:"Butter Croissant",category:"sweet",description:"Flaky, buttery layers baked until golden.",price:120,tag:"BAKED FRESH"}
 ];
+
 let activeFilter = "all";
 const grid = document.querySelector("#menu-grid");
 const search = document.querySelector("#menu-search");
-function renderMenu(){
+
+function renderMenu() {
   const term = search.value.trim().toLowerCase();
-  const visible = menuItems.filter(item => (activeFilter==="all" || item.category===activeFilter) && (item.name.toLowerCase().includes(term) || item.description.toLowerCase().includes(term)));
-  grid.innerHTML = visible.length ? visible.map(item => `<article class="menu-card"><div><div class="menu-card-top"><h3>${item.name}</h3><span class="menu-price">₹${item.price}</span></div><p>${item.description}</p></div><div class="menu-card-top"><span class="menu-tag">${item.category}</span><button class="add-order" data-item="${item.name}">Enquire on WhatsApp ↗</button></div></article>`).join("") : '<p class="muted">No matching items. Try another search.</p>';
+  const visible = menuItems.filter(item =>
+    (activeFilter === "all" || item.category === activeFilter) &&
+    (item.name.toLowerCase().includes(term) || item.description.toLowerCase().includes(term))
+  );
+  grid.innerHTML = visible.length ? visible.map(item => `
+    <article class="menu-card">
+      <div><div class="menu-card-top"><span class="menu-tag">${item.tag}</span><span class="menu-price">₹${item.price}</span></div>
+      <h3>${item.name}</h3><p>${item.description}</p></div>
+      <div class="menu-card-top"><span class="menu-tag">${item.category}</span><button class="add-order" data-item="${item.name}">ENQUIRE ↗</button></div>
+    </article>`).join("") : '<p class="section-note">No matching items. Try another search.</p>';
 }
-document.querySelectorAll(".filter").forEach(button => button.addEventListener("click",()=>{
-  document.querySelectorAll(".filter").forEach(b=>b.classList.remove("active"));
-  button.classList.add("active"); activeFilter=button.dataset.filter; renderMenu();
+
+function sendWhatsApp(message) {
+  if (!/^\d{10,15}$/.test(WHATSAPP_NUMBER)) {
+    const status = document.querySelector("#form-status");
+    if (status) status.textContent = "Demo mode is active. Add the cafe's WhatsApp number in static/app.js to send enquiries.";
+    alert("This is a portfolio demo. Add the cafe's WhatsApp number in static/app.js to enable this action.");
+    return;
+  }
+  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+}
+
+document.querySelectorAll(".filter").forEach(button => button.addEventListener("click", () => {
+  document.querySelectorAll(".filter").forEach(item => item.classList.remove("active"));
+  button.classList.add("active");
+  activeFilter = button.dataset.filter;
+  renderMenu();
 }));
-search.addEventListener("input",renderMenu);
-grid.addEventListener("click",event=>{
-  const button=event.target.closest("[data-item]"); if(!button)return;
-  const item=menuItems.find(entry=>entry.name===button.dataset.item);
-  const message=`Hello Fursat Cafe! I'd like to enquire about ${item.name}. Could you please confirm availability and current price?`;
-  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`,"_blank","noopener");
+search.addEventListener("input", renderMenu);
+grid.addEventListener("click", event => {
+  const button = event.target.closest("[data-item]");
+  if (!button) return;
+  const item = menuItems.find(entry => entry.name === button.dataset.item);
+  sendWhatsApp(`Hello! I'd like to enquire about ${item.name}. Could you please confirm availability and the current price?`);
 });
-document.querySelector("#booking-form").addEventListener("submit",event=>{
+
+document.querySelector("#booking-form").addEventListener("submit", event => {
   event.preventDefault();
-  const data=new FormData(event.currentTarget);
-  const message=[
-    "Hello Fursat Cafe! I'd like to send an enquiry.",
+  const data = new FormData(event.currentTarget);
+  const message = [
+    "Hello! I'd like to enquire about a table.",
     `Name: ${data.get("name")}`,
-    `Mobile: ${data.get("phone")}`,
-    `Request: ${data.get("type")}`,
-    `People / quantity: ${data.get("count")}`,
-    `Message: ${data.get("message") || "Not specified"}`,
-    "Please confirm availability and details. I understand this is a request, not a confirmed booking."
+    `Phone: ${data.get("phone")}`,
+    `Guests: ${data.get("guests")}`,
+    `Date: ${data.get("date") || "Flexible"}`,
+    `Time: ${data.get("time") || "Flexible"}`,
+    `Note: ${data.get("message") || "None"}`,
+    "Please confirm availability. I understand this is a request, not a confirmed reservation."
   ].join("\n");
-  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`,"_blank","noopener");
+  sendWhatsApp(message);
 });
-const navToggle=document.querySelector(".nav-toggle"), nav=document.querySelector(".nav");
-navToggle.addEventListener("click",()=>{
-  const open=nav.classList.toggle("open");navToggle.setAttribute("aria-expanded",String(open));navToggle.textContent=open?"×":"☰";
+
+const navToggle = document.querySelector(".nav-toggle");
+const nav = document.querySelector(".nav");
+navToggle.addEventListener("click", () => {
+  const open = nav.classList.toggle("open");
+  navToggle.setAttribute("aria-expanded", String(open));
+  navToggle.textContent = open ? "×" : "☰";
 });
-nav.querySelectorAll("a").forEach(link=>link.addEventListener("click",()=>{nav.classList.remove("open");navToggle.setAttribute("aria-expanded","false");navToggle.textContent="☰"}));
-const lightbox=document.querySelector("#lightbox"), lightboxImg=lightbox.querySelector("img");
-document.querySelectorAll(".gallery-photo").forEach(photo=>photo.addEventListener("click",()=>{
-  lightboxImg.src=photo.dataset.full;lightbox.classList.add("open");lightbox.setAttribute("aria-hidden","false");
+nav.querySelectorAll("a").forEach(link => link.addEventListener("click", () => {
+  nav.classList.remove("open");
+  navToggle.setAttribute("aria-expanded", "false");
+  navToggle.textContent = "☰";
 }));
-function closeLightbox(){lightbox.classList.remove("open");lightbox.setAttribute("aria-hidden","true");lightboxImg.removeAttribute("src")}
-lightbox.querySelector("button").addEventListener("click",closeLightbox);
-lightbox.addEventListener("click",event=>{if(event.target===lightbox)closeLightbox()});
-document.addEventListener("keydown",event=>{if(event.key==="Escape")closeLightbox()});
-document.querySelector("#year").textContent=new Date().getFullYear();
+
+const lightbox = document.querySelector("#lightbox");
+const lightboxImg = lightbox.querySelector("img");
+document.querySelectorAll(".gallery-photo").forEach(photo => photo.addEventListener("click", () => {
+  lightboxImg.src = photo.dataset.full;
+  lightbox.classList.add("open");
+  lightbox.setAttribute("aria-hidden", "false");
+}));
+function closeLightbox() {
+  lightbox.classList.remove("open");
+  lightbox.setAttribute("aria-hidden", "true");
+  lightboxImg.removeAttribute("src");
+}
+lightbox.querySelector("button").addEventListener("click", closeLightbox);
+lightbox.addEventListener("click", event => { if (event.target === lightbox) closeLightbox(); });
+document.addEventListener("keydown", event => { if (event.key === "Escape") closeLightbox(); });
+document.querySelector("#year").textContent = new Date().getFullYear();
 renderMenu();
